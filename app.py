@@ -24,9 +24,9 @@ model = ResEmoteNet()
 model_path = "./models/best_model_fer2013_ResEmoteNet.pth"
 try:
     checkpoint = torch.load(model_path, map_location=device, weights_only=True)
-    print("Checkpoint keys:", checkpoint.keys())
-    state_dict = checkpoint['model_state_dict']
-    model.load_state_dict(state_dict)
+    # print("Checkpoint keys:", checkpoint.keys())
+    # state_dict = checkpoint['model_state_dict']
+    model.load_state_dict(checkpoint)
     model = model.to(device)
     model.eval()
     print("Model loaded successfully.")
