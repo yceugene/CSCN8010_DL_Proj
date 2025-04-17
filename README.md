@@ -15,6 +15,7 @@ This project implements a real-time facial emotion recognition system using the 
 
 Below is the structure of the project directory:
 
+```
 Recognition/
 ├── dataset/ # Directory for FER2013 dataset
 │ ├── test/ # Test dataset
@@ -46,3 +47,4 @@ Recognition/
 ├── README.md # Project documentation
 ├── temp.jpg # Temporary image file
 └── test.py # Script for testing model loading
+```

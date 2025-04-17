@@ -73,7 +73,7 @@ def detect():
             # Crop the face region
             face_img = img[y:y+h, x:x+w]
             face_img_gray = cv2.cvtColor(
-                face_img, cv2.COLOR_BGR2GRAY)  # Convert to RGB
+                face_img, cv2.COLOR_BGR2GRAY)  # Convert to Grayscale
 
             # Preprocess and perform emotion prediction
             img_tensor = transform(face_img_gray).unsqueeze(0).to(device)
