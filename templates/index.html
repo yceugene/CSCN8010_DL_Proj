@@ -34,28 +34,28 @@
         const processedImage = document.getElementById('processed-image');
         let stream;
 
-        // 獲取攝像頭畫面
+        // Access the webcam
         navigator.mediaDevices.getUserMedia({ video: true })
             .then(s => {
-                stream = s; // 保存 stream 以便後續處理
+                stream = s; // Save the stream for further processing
                 sendFrame();
             })
             .catch(err => {
                 console.error("Error accessing webcam: ", err);
             });
 
-        // 將畫面轉為 base64 並發送到後端
+        // Convert the video frame to base64 and send it to the backend
         function sendFrame() {
             const video = document.createElement('video');
             video.srcObject = stream;
             video.play();
 
             const canvas = document.createElement('canvas');
-            canvas.width = 320; // 降低分辨率以提高速度
+            canvas.width = 320; // Reduce resolution to improve speed
             canvas.height = 240;
             const ctx = canvas.getContext('2d');
 
-            // 等待 video 準備好
+            // Wait for the video to be ready
             video.addEventListener('canplay', () => {
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                 const dataURL = canvas.toDataURL('image/jpeg');
@@ -74,11 +74,11 @@
                     } else if (data.error) {
                         console.error("Error: ", data.error);
                     }
-                    setTimeout(sendFrame, 200); // 每 1 秒發送一次畫面
+                    setTimeout(sendFrame, 200); // Send a frame every 200ms
                 })
                 .catch(err => {
                     console.error("Error sending frame: ", err);
-                    setTimeout(sendFrame, 1000); // 出錯時也繼續嘗試
+                    setTimeout(sendFrame, 1000); // Retry after 1 second if an error occurs
                 });
             }, { once: true });
         }

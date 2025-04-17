@@ -8,19 +8,20 @@ from torchvision import transforms
 import sys
 from flask import Flask, request, render_template, jsonify
 
-# 添加 ResEmoteNet 路徑
+# Add ResEmoteNet path
 sys.path.append(os.path.join(os.getcwd(), "ResEmoteNet"))
 
 app = Flask(__name__)
 
-# 載入 OpenCV 的 Haar Cascade 人臉檢測器
+# Load OpenCV Haar Cascade face detector
 face_cascade = cv2.CascadeClassifier(
     cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
-# 載入 ResEmoteNet 模型
+# Load ResEmoteNet model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = ResEmoteNet()
-model_path = "./models/fer2013_model.pth"  # 確保路徑正確
+# Ensure the path is correct
+model_path = "./models/best_model_fer2013_ResEmoteNet.pth"
 try:
     checkpoint = torch.load(model_path, map_location=device, weights_only=True)
     print("Checkpoint keys:", checkpoint.keys())
@@ -33,7 +34,7 @@ except Exception as e:
     print(f"Error loading model: {e}")
     raise
 
-# 定義數據預處理
+# Define data preprocessing
 transform = transforms.Compose([
     transforms.ToPILImage(),
     transforms.Resize((64, 64)),
@@ -42,7 +43,7 @@ transform = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
 
-# FER2013 類別名稱
+# FER2013 class names
 class_names = ['angry', 'disgust', 'fear',
                'happy', 'sad', 'surprise', 'neutral']
 
@@ -55,41 +56,44 @@ def index():
 @app.route('/detect', methods=['POST'])
 def detect():
     try:
-        # 從前端接收 base64 編碼的圖像
+        # Receive base64-encoded image from the frontend
         data = request.json['image']
         img_data = base64.b64decode(data.split(',')[1])
         np_img = np.frombuffer(img_data, np.uint8)
         img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
 
-        # 轉為灰度圖像進行人臉檢測
+        # Convert to grayscale for face detection
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         faces = face_cascade.detectMultiScale(
             gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
 
-        # 儲存人臉位置和情緒
+        # Store face locations and emotions
         results = []
         for (x, y, w, h) in faces:
+            # Crop the face region
             face_img = img[y:y+h, x:x+w]
-            face_img = cv2.cvtColor(face_img, cv2.COLOR_BGR2RGB)  # 轉為 RGB
+            face_img_gray = cv2.cvtColor(
+                face_img, cv2.COLOR_BGR2GRAY)  # Convert to RGB
 
-            # 預處理並進行推理
-            img_tensor = transform(face_img).unsqueeze(0).to(device)
+            # Preprocess and perform emotion prediction
+            img_tensor = transform(face_img_gray).unsqueeze(0).to(device)
             with torch.no_grad():
                 outputs = model(img_tensor)
                 _, preds = torch.max(outputs, 1)
                 emotion = class_names[preds.item()]
 
-            # 繪製人臉框和情緒標籤（直接在圖像上）
-            cv2.rectangle(img, (x, y), (x+w, y+h), (0, 0, 255), 2)
-            cv2.putText(img, emotion, (x, y-10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 255), 2)
-
+            # Store face location and emotion
             results.append({
                 'face': [int(x), int(y), int(w), int(h)],
                 'emotion': emotion
             })
 
-        # 將處理後的圖像編碼為 base64，返回給前端
+            # Draw face bounding box and emotion label (directly on the original image)
+            cv2.rectangle(img, (x, y), (x+w, y+h), (0, 0, 255), 2)
+            cv2.putText(img, emotion, (x, y-10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 255), 2)
+
+        # Encode the processed image as base64 and return it to the frontend
         _, buffer = cv2.imencode('.jpg', img)
         img_base64 = base64.b64encode(buffer).decode('utf-8')
 
@@ -99,7 +103,7 @@ def detect():
 
 
 if __name__ == '__main__':
-    # 確保環境變數正確載入
+    # Ensure environment variables are loaded correctly
     os.environ['LD_LIBRARY_PATH'] = '/usr/local/cuda-11.2/lib64' + \
         os.environ.get('LD_LIBRARY_PATH', '')
     print("Num GPUs Available: ", torch.cuda.is_available())
