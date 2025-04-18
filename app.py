@@ -21,7 +21,7 @@ face_cascade = cv2.CascadeClassifier(
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = ResEmoteNet()
 # Ensure the path is correct
-model_path = "./models/best_model_fer2013_ResEmoteNet.pth"
+model_path = "./models/best_model.pth"
 try:
     checkpoint = torch.load(model_path, map_location=device, weights_only=True)
     # print("Checkpoint keys:", checkpoint.keys())
